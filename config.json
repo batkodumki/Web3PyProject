@@ -1,3 +1,6 @@
 {
-    "arbitrum_rpc_uri": "https://arbitrum.llamarpc.com"
+    "http_provider_uri": "https://arbitrum.llamarpc.com",
+    "network_name": "Arbitrum One",
+    "network_parent_coin_name": "Ethereum",
+    "network_parent_coin_symbol": "ETH"
 }
