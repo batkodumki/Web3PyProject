@@ -1,7 +1,8 @@
 import json
-from typing import Optional
+from decimal import Decimal
+from typing import Optional, Union
 
-
+from eth_typing import HexStr, ChecksumAddress
 from web3 import Web3
 from eth_account.signers.local import LocalAccount
 from web3.providers import HTTPProvider
@@ -19,10 +20,25 @@ def read_from_json(path: str, encoding: Optional[str] = None) -> list | dict:
     return content
 
 
+class TokenAmount:
+    amount_in_wei: int
+    amount_in_tokens: Decimal
+    token_decimals: int
+
+    def __init__(self, amount: Union[int, float, str, Decimal], decimals: int=18, wei:bool = False):
+        if wei:
+            self.amount_in_wei = amount
+            self.amount_in_tokens = Decimal(str(amount)) / 10**decimals
+        else:
+            self.amount_in_wei = int(Decimal(str(amount))*10**decimals)
+            self.amount_in_tokens = Decimal(str(amount))
+
+        self.token_decimals = decimals
+
+
 class Client:
     def __init__(self, provider_uri: str, private_key: str):
         self.w3 = Web3(HTTPProvider(endpoint_uri=provider_uri))
-
         self.__account: LocalAccount = self.w3.eth.account.from_key(private_key)
 
     @property
@@ -64,7 +80,7 @@ class Client:
         token_contract = self.w3.eth.contract(token_contract_address, abi=token_contract_abi)
         return token_contract.functions.allowance(owner_address, spender_address).call()
 
-    def send_transaction(self, address_to, data=None, address_from=None, increase_gas=1.1, value=None):
+    def send_transaction(self, address_to: str | ChecksumAddress, data: HexStr | None = None, address_from=None, increase_gas=1.1, value=None):
 
         address_from = self.address if not address_from else Web3.to_checksum_address(address_from)
         address_to = Web3.to_checksum_address(address_to)
@@ -86,3 +102,27 @@ class Client:
             transaction_params['gas'] = int(self.w3.eth.estimate_gas(transaction_params)*increase_gas)
         except Exception as error:
             print(f"{address_from} | Transaction failed | {error}")
+            return None
+
+        signed_transaction = self.__account.sign_transaction(transaction_params)
+        transaction_hash = Web3.to_hex(self.w3.eth.send_transaction(signed_transaction.rawTransaction))
+        return transaction_hash
+
+    def verify_transaction(self, transaction_hash) -> bool:
+        try:
+            data = self.w3.eth.wait_for_transaction_receipt(transaction_hash, timeout=180)
+            if 'status' in data and data['status'] == 1:
+                print(f'{self.address} | transaction was successful: {transaction_hash}')
+                return True
+            else:
+                print(f'{self.address} | transaction failed:{transaction_hash}')
+                return False
+        except Exception as error:
+            print(f'{self.address} | unexpected error in <verify_transaction> function: {error}')
+            return False
+
+    def approve(self, token_contract_address, token_contract_abi, spender_address):
+        token_contract_address = Web3.to_checksum_address(token_contract_address)
+        token_contract = self.w3.eth.contract(token_contract_address, abi=token_contract_abi)
+        spender_address = Web3.to_checksum_address(spender_address)
+        transaction_hash = self.send_transaction(address_to=token_contract_address, data=token_contract.encodeABI('approve', args=(spender_address,)))

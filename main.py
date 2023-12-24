@@ -1,5 +1,7 @@
 import os
 import json
+
+import requests
 from dotenv import load_dotenv
 from eth_account.signers.local import LocalAccount
 
@@ -7,7 +9,7 @@ from web3 import Web3
 from web3.providers import HTTPProvider
 from web3.middleware import geth_poa_middleware
 
-from utils import read_from_json, Client
+from utils import read_from_json, Client , TokenAmount
 
 if __name__ == "__main__":
     load_dotenv()
@@ -36,3 +38,5 @@ if __name__ == "__main__":
                              token_contract_abi=read_from_json('abis/USDC_abi_in_arbitrum.json')))
     print(client.get_allowance(token_contract_address=config['USDC_token_contract_address'],
                              token_contract_abi=read_from_json('abis/USDC_abi_in_arbitrum.json')))
+
+
