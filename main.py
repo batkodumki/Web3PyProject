@@ -8,8 +8,9 @@ from web3.providers import HTTPProvider
 from web3.middleware import geth_poa_middleware
 
 
-from utils import get_account_from_seed_phrase
-
+from client import Client
+# from utils import get_account_from_seed_phrase
+from utils import read_from_json
 
 if __name__ == "__main__":
     load_dotenv()
@@ -26,8 +27,11 @@ if __name__ == "__main__":
             account: LocalAccount = web3.eth.account.from_key(os.getenv("PRIVATE_KEY"))
             balance = Web3.from_wei(web3.eth.get_balance(Web3.to_checksum_address(account.address)),"ether")
             print(f"Balance of account in {config['network_native_coin_symbol']} is {balance}")
-
             # account = get_account_from_seed_phrase(web3, os.getenv("SEED_PHRASE"))
             # print(account.key)
+            client = Client(provider_uri=config['http_provider_uri'], private_key=account.key)
+            print(client.get_token_decimals(config['USDT_token_contract_address'], token_contract_abi=read_from_json(
+                'abis/USDT_abi_in_arbitrum.json')))
+
     except FileNotFoundError:
         print('Configuration file not found')
