@@ -1,0 +1,8 @@
+{
+  "http_provider_uri": "https://bsc.drpc.org",
+  "network_name": "BSC",
+  "native_token_name": "BNB",
+  "native_token_symbol": "BNB",
+  "native_token_decimals": 18,
+  "native_token_contract_address": "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+}
