@@ -1,42 +1,34 @@
-import os
 import json
+import os
+import threading
+import time
 
-import requests
 from dotenv import load_dotenv
-from eth_account.signers.local import LocalAccount
-
 from web3 import Web3
 from web3.providers import HTTPProvider
-from web3.middleware import geth_poa_middleware
 
-from utils import read_from_json, Client , TokenAmount
+from utils import Client
+from networks import Networks
+import settings
+
+
+def first_thread_task(web3_client: Client):
+    web3_client.fixate_local_account()
+
+    print(web3_client.get_current_token_balance().amount_in_tokens)
+
+
+def second_thread_task(web3_client: Client):
+    web3_client.fixate_local_account()
+    print(web3_client.get_current_token_balance().amount_in_tokens)
+
 
 if __name__ == "__main__":
     load_dotenv()
-    try:
-        with open("config.json", "r") as config_file:
-            config = json.load(config_file)
-    except FileNotFoundError:
-        print('Configuration file not found')
-
-    web3 = Web3(HTTPProvider(endpoint_uri=config["http_provider_uri"]))
-    web3.middleware_onion.inject(geth_poa_middleware, layer=0)
-    web3.eth.account.enable_unaudited_hdwallet_features()
-    print(f"Gas price in {config['network_name']} is {web3.from_wei(web3.eth.gas_price, 'gwei')} GWEI")
-    print(f"Current block number in {config['network_name']} is {web3.eth.block_number}")
-    print(f"Current chain id is {web3.eth.chain_id}")
-
-    account: LocalAccount = web3.eth.account.from_key(os.getenv("PRIVATE_KEY"))
-    balance = Web3.from_wei(web3.eth.get_balance(Web3.to_checksum_address(account.address)), "ether")
-    print(f"Balance of account in {config['network_native_coin_symbol']} is {balance}")
-    # account = get_account_from_seed_phrase(web3, os.getenv("SEED_PHRASE"))
-    # print(account.key)
-    client = Client(provider_uri=config['http_provider_uri'], private_key=account.key)
-    print(client.get_token_decimals(config['USDC_token_contract_address'], token_contract_abi=read_from_json(
-        'abis/USDC_abi_in_arbitrum.json')))
-    print(client.get_balance(token_contract_address=config['USDC_token_contract_address'],
-                             token_contract_abi=read_from_json('abis/USDC_abi_in_arbitrum.json')))
-    print(client.get_allowance(token_contract_address=config['USDC_token_contract_address'],
-                             token_contract_abi=read_from_json('abis/USDC_abi_in_arbitrum.json')))
-
-
+    client: Client = Client(os.getenv("PRIVATE_KEY"), Networks.BSC)
+    threading.Thread(target=first_thread_task, args=(client,)).start()
+    threading.Thread(target=second_thread_task, args=(client,)).start()
+    time.sleep(0.3)
+    client.change_account_globally("ccd2b89b89736f30d47729de094e31e21e771f5000fd46355de366376c316515")
+    threading.Thread(target=first_thread_task, args=(client,)).start()
+    threading.Thread(target=second_thread_task, args=(client,)).start()

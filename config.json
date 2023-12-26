@@ -1,8 +1,0 @@
-{
-  "http_provider_uri": "https://arbitrum.llamarpc.com",
-  "network_name": "Arbitrum One",
-  "network_native_coin_name": "Ethereum",
-  "network_native_coin_symbol": "ETH",
-  "network_native_coin_decimals" : 18,
-  "USDC_token_contract_address": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831"
-}
